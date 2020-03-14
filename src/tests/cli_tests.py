@@ -183,7 +183,7 @@ def test_userid_genkey(userid_beginning, weird_part, userid_end, weird_part2='')
     for userid in USERS:
         rnp_genkey_rsa(userid.encode(CONSOLE_ENCODING), 1024)
     # Read with GPG
-    ret, out, err = run_proc(GPG, ['--homedir', path_for_gpg(RNPDIR), '--list-keys'])
+    ret, out, err = run_proc(GPG, ['--homedir', path_for_gpg(RNPDIR), '--list-keys', '--charset', CONSOLE_ENCODING])
     if ret != 0:
         msgs.append('gpg : failed to read keystore')
         log = err
