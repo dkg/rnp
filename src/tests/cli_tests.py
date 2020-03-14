@@ -50,9 +50,9 @@ UNICODE_SEQUENCE_1 = UNICODE_LATIN_CAPITAL_A_GRAVE + UNICODE_LATIN_SMALL_A_MACRO
 UNICODE_SEQUENCE_2 = UNICODE_LATIN_SMALL_A_GRAVE + UNICODE_LATIN_CAPITAL_A_MACRON \
     + UNICODE_GREEK_SMALL_HETA + UNICODE_GREEK_CAPITAL_OMEGA \
     + UNICODE_CYRILLIC_SMALL_A + UNICODE_CYRILLIC_CAPITAL_YA
-WEIRD_USERID_UNICODE_1 = u'tracker_' + unichr(160) + unichr(161) \
+WEIRD_USERID_UNICODE_1 = unichr(160) + unichr(161) \
     + UNICODE_SEQUENCE_1 + unichr(40960) + u'@rnp'
-WEIRD_USERID_UNICODE_2 = u'tracker_' + unichr(160) + unichr(161) \
+WEIRD_USERID_UNICODE_2 = unichr(160) + unichr(161) \
     + UNICODE_SEQUENCE_2 + unichr(40960) + u'@rnp'
 WEIRD_USERID_SPECIAL_CHARS = '}{][)^*.+(\t\n|$@rnp'
 WEIRD_USERID_TOO_LONG = 'x' * 125 + '@rnp' # totaling 129 (MAX_USER_ID + 1)
@@ -172,36 +172,36 @@ def escape_regex(str):
     return ''.join((c, "[\\x{:02X}]".format(ord(c)))[0 <= ord(c) <= 0x20 \
         or c in ['[',']','(',')','|','$','.','*','^','$','\\','+','?','{','}']] for c in str)
 
-def test_userid_genkey(userid_beginning, weird_part, userid_end, tryGPG=True):
+def test_userid_genkey(userid_beginning, weird_part, userid_end, weird_part2=''):
     clear_keyrings()
     msgs = []
     log = None
+    USERS = [userid_beginning + weird_part + userid_end]
+    if weird_part2:
+        USERS.append(userid_beginning + weird_part2 + userid_end)
     # Run key generation
-    userid = userid_beginning + weird_part + userid_end
-    rnp_genkey_rsa(userid.encode(CONSOLE_ENCODING), 1024)
-    if tryGPG:
-        # Read with GPG
-        ret, out, err = run_proc(GPG, ['--homedir', path_for_gpg(RNPDIR), '--list-keys'])
-        if ret != 0:
-            msgs.append('gpg : failed to read keystore')
-            log = err
-        else:
-            tracker_gpg = re.findall(r'' + userid_beginning + '.*' + userid_end + '', out.decode(CONSOLE_ENCODING))
-            if len(tracker_gpg) != 1:
-                msgs.append('gpg : failed to read expected key from keystore')
-            elif tracker_gpg[0].decode('string_escape') != userid:
-                msgs.append('gpg: userid mismatch')
+    for userid in USERS:
+        rnp_genkey_rsa(userid.encode(CONSOLE_ENCODING), 1024)
+    # Read with GPG
+    ret, out, err = run_proc(GPG, ['--homedir', path_for_gpg(RNPDIR), '--list-keys'])
+    if ret != 0:
+        msgs.append('gpg : failed to read keystore')
+        log = err
+    else:
+        tracker_escaped = re.findall(r'' + userid_beginning + '.*' + userid_end + '', out.decode(CONSOLE_ENCODING))
+        tracker_gpg = map(lambda x : x.encode(CONSOLE_ENCODING).decode('string_escape').decode(CONSOLE_ENCODING), tracker_escaped)
+        if tracker_gpg != USERS:
+            msgs.append('gpg : failed to find expected userids from keystore')
     # Read with rnpkeys
     ret, out, err = run_proc(RNPK, ['--homedir', RNPDIR, '--list-keys'])
     if ret != 0:
         msgs.append('rnpkeys : failed to read keystore')
         log = err
     else:
-        tracker_rnp = re.findall(r'' + userid_beginning + '.*' + userid_end + '', out.decode(CONSOLE_ENCODING))
-        if len(tracker_rnp) != 1:
-            msgs.append('rnpkeys : failed to read expected key from keystore')
-        elif tracker_rnp[0].decode('string_escape') != userid:
-            msgs.append('rnpkeys: userid mismatch')
+        tracker_escaped = re.findall(r'' + userid_beginning + '.*' + userid_end + '', out.decode(CONSOLE_ENCODING))
+        tracker_rnp = map(lambda x : x.encode(CONSOLE_ENCODING).decode('string_escape').decode(CONSOLE_ENCODING), tracker_escaped)
+        if tracker_rnp != USERS:
+            msgs.append('rnpkeys : failed to find expected userids from keystore')
     clear_keyrings()
     if msgs:
         raise_err('\n'.join(msgs), log)
@@ -1371,7 +1371,7 @@ class Keystore(unittest.TestCase):
             raise_err('Wrong revoked subkey listing', out)
 
     def test_userid_unicode_genkeys(self):
-        test_userid_genkey('track', WEIRD_USERID_UNICODE_1, 'end')
+        test_userid_genkey('track', WEIRD_USERID_UNICODE_1, 'end', WEIRD_USERID_UNICODE_2)
 
     def test_userid_special_chars_genkeys(self):
         test_userid_genkey('track', WEIRD_USERID_SPECIAL_CHARS, 'end')
