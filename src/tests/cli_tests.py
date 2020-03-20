@@ -54,7 +54,7 @@ WEIRD_USERID_UNICODE_1 = unichr(160) + unichr(161) \
     + UNICODE_SEQUENCE_1 + unichr(40960) + u'@rnp'
 WEIRD_USERID_UNICODE_2 = unichr(160) + unichr(161) \
     + UNICODE_SEQUENCE_2 + unichr(40960) + u'@rnp'
-WEIRD_USERID_SPECIAL_CHARS = '}{][)^*.+(\t\n|$@rnp'
+WEIRD_USERID_SPECIAL_CHARS = '\\}{][)^*.+(\t\n|$@rnp'
 WEIRD_USERID_TOO_LONG = 'x' * 125 + '@rnp' # totaling 129 (MAX_USER_ID + 1)
 
 # Key userids

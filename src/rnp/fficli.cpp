@@ -697,6 +697,46 @@ cli_rnp_escape_string(const std::string &src)
     return result;
 }
 
+std::string
+cli_rnp_unescape_for_regcomp(const std::string &src)
+{
+    std::string result;
+    result.reserve(src.length());
+    regex_t    r = {};
+    regmatch_t matches[1];
+    if (regcomp(&r, "\\\\x[0-9a-f]([0-9a-f])?", REG_EXTENDED | REG_ICASE) != 0)
+        return src;
+
+    int offset = 0;
+    while (regexec(&r, src.c_str() + offset, 1, matches, 0) == 0) {
+        result.append(src, offset, matches[0].rm_so);
+        int         hexoff = matches[0].rm_so + 2;
+        std::string hex;
+        hex.push_back(src[offset + hexoff]);
+        if (hexoff + 1 < matches[0].rm_eo) {
+            hex.push_back(src[offset + hexoff + 1]);
+        }
+        char decoded = stoi(hex, 0, 16);
+        if ((decoded >= 0x7B && decoded <= 0x7D) || (decoded >= 0x24 && decoded <= 0x2E) ||
+            decoded == 0x5C || decoded == 0x5E) {
+            result.push_back('\\');
+            result.push_back(decoded);
+        } else if ((decoded == '[' || decoded == ']') &&
+                   /* not enclosed in [] */ (result.empty() || result.back() != '[')) {
+            result.push_back('[');
+            result.push_back(decoded);
+            result.push_back(']');
+        } else {
+            result.push_back(decoded);
+        }
+        offset += matches[0].rm_eo;
+    }
+
+    result.append(src, offset);
+
+    return result;
+}
+
 void
 cli_rnp_print_key_info(FILE *fp, rnp_ffi_t ffi, rnp_key_handle_t key, bool psecret, bool psigs)
 {
@@ -1130,7 +1170,8 @@ key_matches_string(rnp_key_handle_t handle, const std::string &str)
 
 #ifndef RNP_USE_STD_REGEX
     /* match on full name or email address as a NOSUB, ICASE regexp */
-    if (regcomp(&r, str.c_str(), REG_EXTENDED | REG_ICASE) != 0) {
+    if (regcomp(&r, cli_rnp_unescape_for_regcomp(str).c_str(), REG_EXTENDED | REG_ICASE) !=
+        0) {
         goto done;
     }
 #else
