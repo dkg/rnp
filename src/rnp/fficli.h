@@ -127,7 +127,6 @@ bool        cli_rnp_setup(cli_rnp_t *rnp);
 bool        cli_rnp_protect_file(cli_rnp_t *rnp);
 bool        cli_rnp_process_file(cli_rnp_t *rnp);
 std::string cli_rnp_escape_string(const std::string &src);
-std::string cli_rnp_unescape_for_regcomp(const std::string &src);
 
 void clear_key_handles(std::vector<rnp_key_handle_t> &keys);
 
