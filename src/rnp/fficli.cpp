@@ -733,7 +733,7 @@ cli_rnp_unescape_for_regcomp(const std::string &src)
         offset += matches[0].rm_eo;
     }
 
-    result.append(src, offset);
+    result.append(src.begin() + offset, src.end());
 
     return result;
 }
