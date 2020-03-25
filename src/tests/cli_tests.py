@@ -2062,7 +2062,7 @@ class Encryption(unittest.TestCase):
         # Encrypt to all recipients
         src = data_path('test_messages') + '/message.txt'
         dst, dec = reg_workfiles('cleartext', '.rnp', '.dec')
-        rnp_encrypt_file_ex(src, dst, USERIDS_2, None, None)
+        rnp_encrypt_file_ex(src, dst, map(lambda uid: uid.encode(CONSOLE_ENCODING), USERIDS_2), None, None)
         # Decrypt file with each of the passwords
         for pswd in KEYPASS:
             rnp_decrypt_file(dst, dec, pswd)
