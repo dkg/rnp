@@ -309,7 +309,6 @@ def rnp_encrypt_file_ex(src, dst, recipients=None, passwords=None, aead=None, ci
     if armor: params += ['--armor']
     rnp_params_insert_aead(params, 2, aead)
     rnp_params_insert_z(params, 2, z)
-    print("rnp_encrypt_file_ex params:", params)
     ret, _, err = run_proc(RNP, params)
     if passwords: os.close(pipe)
     if ret != 0:
