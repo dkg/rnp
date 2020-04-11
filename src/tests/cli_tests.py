@@ -2064,7 +2064,8 @@ class Encryption(unittest.TestCase):
         rnp_encrypt_file_ex(src, dst, map(lambda uid: uid.encode(CONSOLE_ENCODING), USERIDS_2), None, None)
         # Decrypt file with each of the passwords
         for pswd in KEYPASS:
-            rnp_decrypt_file(dst, dec, pswd)
+            multiple_pass_attempts = (pswd + '\n') * len(KEYPASS)
+            rnp_decrypt_file(dst, dec, multiple_pass_attempts)
             compare_files(src, dec, 'rnp decrypted data differs')
             remove_files(dec)
         # Cleanup
