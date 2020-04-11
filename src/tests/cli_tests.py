@@ -2048,13 +2048,13 @@ class Encryption(unittest.TestCase):
             remove_files(dst, dec)
 
     def test_encryption_weird_userids(self):
-        USERIDS_1 = [WEIRD_USERID_SPECIAL_CHARS, WEIRD_USERID_UNICODE_1]
-        USERIDS_2 = [WEIRD_USERID_SPECIAL_CHARS, WEIRD_USERID_UNICODE_1]
+        USERIDS_1 = [WEIRD_USERID_SPECIAL_CHARS, WEIRD_USERID_UNICODE_1, WEIRD_USERID_UNICODE_2]
+        USERIDS_2 = [WEIRD_USERID_SPECIAL_CHARS, WEIRD_USERID_UNICODE_1, WEIRD_USERID_UNICODE_2]
         # The idea is to generate keys with USERIDS_1 and encrypt with USERIDS_2
         # (that differ only in case)
         # But currently Unicode case-insensitive search is not working,
         # so we're encrypting with exactly the same recipient
-        KEYPASS = ['key1pass', 'key2pass']
+        KEYPASS = ['key1pass', 'key2pass', 'key3pass']
         # Generate multiple keys
         for uid, pswd in zip(USERIDS_1, KEYPASS):
             rnp_genkey_rsa(uid.encode(CONSOLE_ENCODING), 1024, pswd)
