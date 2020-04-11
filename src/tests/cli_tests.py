@@ -14,7 +14,7 @@ from os import path
 import cli_common
 from cli_common import (file_text, find_utility, is_windows, list_upto,
                         path_for_gpg, pswd_pipe, raise_err, random_text,
-                        rnp_file_path, run_proc)
+                        rnp_file_path, run_proc, CONSOLE_ENCODING)
 from gnupg import GnuPG as GnuPG
 from rnp import Rnp as Rnp
 
@@ -31,7 +31,6 @@ TESTS_SUCCEEDED = []
 TESTS_FAILED = []
 TEST_WORKFILES = []
 
-CONSOLE_ENCODING = 'utf-8'
 UNICODE_LATIN_CAPITAL_A_GRAVE = unichr(192)
 UNICODE_LATIN_SMALL_A_GRAVE = unichr(224)
 UNICODE_LATIN_CAPITAL_A_MACRON = unichr(256)
