@@ -14,7 +14,7 @@ from os import path
 import cli_common
 from cli_common import (file_text, find_utility, is_windows, list_upto,
                         path_for_gpg, pswd_pipe, raise_err, random_text,
-                        rnp_file_path, run_proc, CONSOLE_ENCODING)
+                        rnp_file_path, run_proc, _decode, string_escape, CONSOLE_ENCODING)
 from gnupg import GnuPG as GnuPG
 from rnp import Rnp as Rnp
 
@@ -30,6 +30,13 @@ RMWORKDIR = True
 TESTS_SUCCEEDED = []
 TESTS_FAILED = []
 TEST_WORKFILES = []
+
+if sys.version_info >= (3,):
+    unichr = chr
+
+def escape_regex(str):
+    return ''.join((c, "[\\x{:02X}]".format(ord(c)))[0 <= ord(c) <= 0x20 \
+        or c in ['[',']','(',')','|','$','.','*','^','$','\\','+','?','{','}']] for c in str)
 
 UNICODE_LATIN_CAPITAL_A_GRAVE = unichr(192)
 UNICODE_LATIN_SMALL_A_GRAVE = unichr(224)
@@ -167,10 +174,6 @@ def check_packets(fname, regexp):
             logging.debug(output)
         return result
 
-def escape_regex(str):
-    return ''.join((c, "[\\x{:02X}]".format(ord(c)))[0 <= ord(c) <= 0x20 \
-        or c in ['[',']','(',')','|','$','.','*','^','$','\\','+','?','{','}']] for c in str)
-
 def test_userid_genkey(userid_beginning, weird_part, userid_end, weird_part2=''):
     clear_keyrings()
     msgs = []
@@ -180,15 +183,15 @@ def test_userid_genkey(userid_beginning, weird_part, userid_end, weird_part2='')
         USERS.append(userid_beginning + weird_part2 + userid_end)
     # Run key generation
     for userid in USERS:
-        rnp_genkey_rsa(userid.encode(CONSOLE_ENCODING), 1024)
+        rnp_genkey_rsa(userid, 1024)
     # Read with GPG
     ret, out, err = run_proc(GPG, ['--homedir', path_for_gpg(RNPDIR), '--list-keys', '--charset', CONSOLE_ENCODING])
     if ret != 0:
         msgs.append('gpg : failed to read keystore')
         log = err
     else:
-        tracker_escaped = re.findall(r'' + userid_beginning + '.*' + userid_end + '', out.decode(CONSOLE_ENCODING))
-        tracker_gpg = map(lambda x : x.encode(CONSOLE_ENCODING).decode('string_escape').decode(CONSOLE_ENCODING), tracker_escaped)
+        tracker_escaped = re.findall(r'' + userid_beginning + '.*' + userid_end + '', out)
+        tracker_gpg = list(map(string_escape, tracker_escaped))
         if tracker_gpg != USERS:
             msgs.append('gpg : failed to find expected userids from keystore')
     # Read with rnpkeys
@@ -197,8 +200,8 @@ def test_userid_genkey(userid_beginning, weird_part, userid_end, weird_part2='')
         msgs.append('rnpkeys : failed to read keystore')
         log = err
     else:
-        tracker_escaped = re.findall(r'' + userid_beginning + '.*' + userid_end + '', out.decode(CONSOLE_ENCODING))
-        tracker_rnp = map(lambda x : x.encode(CONSOLE_ENCODING).decode('string_escape').decode(CONSOLE_ENCODING), tracker_escaped)
+        tracker_escaped = re.findall(r'' + userid_beginning + '.*' + userid_end + '', out)
+        tracker_rnp = list(map(string_escape, tracker_escaped))
         if tracker_rnp != USERS:
             msgs.append('rnpkeys : failed to find expected userids from keystore')
     clear_keyrings()
@@ -2056,11 +2059,12 @@ class Encryption(unittest.TestCase):
         KEYPASS = ['key1pass', 'key2pass', 'key3pass']
         # Generate multiple keys
         for uid, pswd in zip(USERIDS_1, KEYPASS):
-            rnp_genkey_rsa(uid.encode(CONSOLE_ENCODING), 1024, pswd)
+            rnp_genkey_rsa(uid, 1024, pswd)
         # Encrypt to all recipients
         src = data_path('test_messages') + '/message.txt'
         dst, dec = reg_workfiles('cleartext', '.rnp', '.dec')
-        rnp_encrypt_file_ex(src, dst, map(lambda uid: uid.encode(CONSOLE_ENCODING), USERIDS_2), None, None)
+        rnp_encrypt_file_ex(src, dst, list(map(lambda uid: uid, USERIDS_2)), None, None) 
+        # TODO
         # Decrypt file with each of the passwords
         for pswd in KEYPASS:
             multiple_pass_attempts = (pswd + '\n') * len(KEYPASS)

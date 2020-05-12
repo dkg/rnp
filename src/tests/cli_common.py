@@ -69,9 +69,9 @@ def random_text(path, size):
     with open(path, 'w+') as f:
         f.write(st)
 
-def file_text(path):
+def file_text(path, encoding = 'utf-8'):
     with open(path, 'rb') as f:
-        return f.read().decode().replace('\r\r', '\r')
+        return f.read().decode(encoding).replace('\r\r', '\r')
 
 def find_utility(name, exitifnone = True):
     path = distutils.spawn.find_executable(name)
@@ -159,8 +159,8 @@ def run_proc_windows(proc, params, stdin=None):
             os.dup2(pass_cp, passfd)
             os.close(pass_cp)
             passfo.close()
-    out = file_text(stdout_path).replace('\r\n', '\n')
-    err = file_text(stderr_path).replace('\r\n', '\n')
+    out = file_text(stdout_path, CONSOLE_ENCODING).replace('\r\n', '\n')
+    err = file_text(stderr_path, CONSOLE_ENCODING).replace('\r\n', '\n')
     os.unlink(stdout_path)
     os.unlink(stderr_path)
     if stdin: 
@@ -171,12 +171,41 @@ def run_proc_windows(proc, params, stdin=None):
     logging.debug(out.strip())
     return (retcode, out, err)
 
+if sys.version_info >= (3,):
+    def string_escape(s):
+        bts = bytes(s, 'utf-8')
+        result = u''
+        candidate = bytearray()
+        utf = bytearray()
+        for b in bts:
+            if b > 0x7F:
+                if len(candidate) > 0:
+                    result += candidate.decode('unicode-escape')
+                    candidate.clear()
+                utf.append(b)
+            else:
+                if len(utf) > 0:
+                    result += utf.decode('utf-8')
+                    utf.clear()
+                candidate.append(b)
+        if len(candidate) > 0:
+            result += candidate.decode('unicode-escape')
+        if len(utf) > 0:
+            result += utf.decode('utf-8')
+        return result
+    def _decode(s):
+        return s
+else: # Python 2
+    def string_escape(s):
+        return s.encode(CONSOLE_ENCODING).decode('string_escape')
+    def _decode(x):
+        return x.decode(CONSOLE_ENCODING)
+
 def run_proc(proc, params, stdin=None):
     # On Windows we need to use spawnv() for handle inheritance in pswd_pipe()
     if is_windows():
         return run_proc_windows(proc, params, stdin)
-
-    paramline = u' '.join(map(lambda param: param.decode(CONSOLE_ENCODING), params))
+    paramline = u' '.join(map(_decode, params))
     logging.debug((proc + ' ' + paramline).strip())
     process = Popen([proc] + params, stdout=PIPE, stderr=PIPE, stdin=PIPE if stdin else None)
     output, errout = process.communicate(stdin)
