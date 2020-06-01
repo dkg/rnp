@@ -172,7 +172,7 @@ def run_proc_windows(proc, params, stdin=None):
     return (retcode, out, err)
 
 if sys.version_info >= (3,):
-    def string_escape(s):
+    def decode_string_escape(s):
         bts = bytes(s, 'utf-8')
         result = u''
         candidate = bytearray()
@@ -196,8 +196,8 @@ if sys.version_info >= (3,):
     def _decode(s):
         return s
 else: # Python 2
-    def string_escape(s):
-        return s.encode(CONSOLE_ENCODING).decode('string_escape')
+    def decode_string_escape(s):
+        return s.encode(CONSOLE_ENCODING).decode('decode_string_escape')
     def _decode(x):
         return x.decode(CONSOLE_ENCODING)
 
@@ -207,7 +207,10 @@ def run_proc(proc, params, stdin=None):
         return run_proc_windows(proc, params, stdin)
     paramline = u' '.join(map(_decode, params))
     logging.debug((proc + ' ' + paramline).strip())
-    process = Popen([proc] + params, stdout=PIPE, stderr=PIPE, stdin=PIPE if stdin else None)
+    param_bytes = list(map(lambda x: x.encode(CONSOLE_ENCODING), params))
+    process = Popen([proc] + param_bytes, stdout=PIPE, stderr=PIPE,
+                    stdin=PIPE if stdin else None, close_fds=False,
+                    universal_newlines=True, encoding=CONSOLE_ENCODING)
     output, errout = process.communicate(stdin)
     retcode = process.poll()
     logging.debug(errout.strip())

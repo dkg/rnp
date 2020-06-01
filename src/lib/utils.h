@@ -153,6 +153,8 @@ void         set_rnp_log_switch(int8_t);
 
 #ifdef _WIN32
 #define RNP_MKDIR(pathname, mode) mkdir(pathname)
+bool rnp_win_substitute_cmdline_args(int *argc, char ***argv);
+void rnp_win_clear_args(int argc, char **argv);
 #else
 #define RNP_MKDIR(pathname, mode) mkdir(pathname, mode)
 #endif

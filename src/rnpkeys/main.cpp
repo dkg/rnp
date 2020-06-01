@@ -70,6 +70,10 @@ rnpkeys_main(int argc, char **argv)
 
     rnp_cfg_init(&cfg);
 
+#if !defined(RNP_RUN_TESTS) && defined(_WIN32)
+    auto args_are_substituted = rnp_win_substitute_cmdline_args(&argc, &argv);
+#endif
+
     while ((ch = getopt_long(argc, argv, "Vglo:", options, &optindex)) != -1) {
         if (ch >= CMD_LIST_KEYS) {
             /* getopt_long returns 0 for long options */
@@ -124,5 +128,10 @@ rnpkeys_main(int argc, char **argv)
 end:
     rnp_cfg_free(&cfg);
     cli_rnp_end(&rnp);
+#if !defined(RNP_RUN_TESTS) && defined(_WIN32)
+    if (args_are_substituted) {
+        rnp_win_clear_args(argc, argv);
+    }
+#endif
     return ret;
 }

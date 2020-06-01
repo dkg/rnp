@@ -86,6 +86,12 @@ __RCSID("$NetBSD: misc.c,v 1.41 2012/03/05 02:20:18 christos Exp $");
 #include "utils.h"
 #include "json_utils.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#include <locale>
+#include <codecvt>
+#endif
+
 #ifdef WIN32
 #define vsnprintf _vsnprintf
 #endif
@@ -520,3 +526,87 @@ array_add_element_json(json_object *obj, json_object *val)
     }
     return true;
 }
+
+#ifdef _WIN32
+static bool
+contains_non_ascii(int argc, char **argv)
+{
+    for (int i = 0; i < argc; i++) {
+        for (auto sz = argv[i]; *sz; sz++) {
+            if ((*sz & 0x7F) != *sz) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+static std::vector<std::string>
+get_utf8_args()
+{
+    int       arg_nb;
+    wchar_t **arg_w;
+
+    arg_w = CommandLineToArgvW(GetCommandLineW(), &arg_nb);
+    if (!arg_w) {
+        RNP_LOG("CommandLineToArgvW failed");
+        return std::vector<std::string>();
+    }
+
+    std::vector<std::string> result;
+    result.reserve(arg_nb);
+
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
+    for (int i = 0; i < arg_nb; i++) {
+        auto utf8 = myconv.to_bytes(arg_w[i]);
+        result.push_back(utf8);
+    }
+
+    LocalFree(arg_w);
+    return result;
+}
+
+void
+rnp_win_clear_args(int argc, char **argv)
+{
+    for (int i = 0; i < argc; i++) {
+        if (argv[i]) {
+            free(argv[i]);
+        }
+    }
+}
+
+bool
+rnp_win_substitute_cmdline_args(int *argc, char ***argv)
+{
+    if (!contains_non_ascii(*argc, *argv)) {
+        return false;
+    }
+    auto argv_utf8_strings = get_utf8_args();
+    int  argc_utf8 = argv_utf8_strings.size();
+    if (argc_utf8 != *argc) {
+        RNP_LOG("Unexpected number of arguments from unicode command line");
+        return false;
+    }
+    char **argv_utf8_cstrs = new (std::nothrow) char *[argc_utf8];
+    if (!argv_utf8_cstrs) {
+        RNP_LOG("Memory allocation failed");
+        return false;
+    }
+    bool result = true;
+    for (int i = 0; i < argc_utf8; i++) {
+        argv_utf8_cstrs[i] = strdup(argv_utf8_strings[i].c_str());
+        if (!argv_utf8_cstrs[i]) {
+            result = false;
+        }
+    }
+    if (result) {
+        *argc = argc_utf8;
+        *argv = argv_utf8_cstrs;
+    } else {
+        rnp_win_clear_args(argc_utf8, argv_utf8_cstrs);
+    }
+    return result;
+}
+
+#endif

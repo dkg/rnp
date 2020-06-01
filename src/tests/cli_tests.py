@@ -14,7 +14,7 @@ from os import path
 import cli_common
 from cli_common import (file_text, find_utility, is_windows, list_upto,
                         path_for_gpg, pswd_pipe, raise_err, random_text,
-                        rnp_file_path, run_proc, _decode, string_escape, CONSOLE_ENCODING)
+                        rnp_file_path, run_proc, decode_string_escape, CONSOLE_ENCODING)
 from gnupg import GnuPG as GnuPG
 from rnp import Rnp as Rnp
 
@@ -191,7 +191,7 @@ def test_userid_genkey(userid_beginning, weird_part, userid_end, weird_part2='')
         log = err
     else:
         tracker_escaped = re.findall(r'' + userid_beginning + '.*' + userid_end + '', out)
-        tracker_gpg = list(map(string_escape, tracker_escaped))
+        tracker_gpg = list(map(decode_string_escape, tracker_escaped))
         if tracker_gpg != USERS:
             msgs.append('gpg : failed to find expected userids from keystore')
     # Read with rnpkeys
@@ -201,7 +201,7 @@ def test_userid_genkey(userid_beginning, weird_part, userid_end, weird_part2='')
         log = err
     else:
         tracker_escaped = re.findall(r'' + userid_beginning + '.*' + userid_end + '', out)
-        tracker_rnp = list(map(string_escape, tracker_escaped))
+        tracker_rnp = list(map(decode_string_escape, tracker_escaped))
         if tracker_rnp != USERS:
             msgs.append('rnpkeys : failed to find expected userids from keystore')
     clear_keyrings()
