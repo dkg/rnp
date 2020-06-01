@@ -69,7 +69,7 @@ def random_text(path, size):
     with open(path, 'w+') as f:
         f.write(st)
 
-def file_text(path, encoding = 'utf-8'):
+def file_text(path, encoding = CONSOLE_ENCODING):
     with open(path, 'rb') as f:
         return f.read().decode(encoding).replace('\r\r', '\r')
 
@@ -159,8 +159,8 @@ def run_proc_windows(proc, params, stdin=None):
             os.dup2(pass_cp, passfd)
             os.close(pass_cp)
             passfo.close()
-    out = file_text(stdout_path, CONSOLE_ENCODING).replace('\r\n', '\n')
-    err = file_text(stderr_path, CONSOLE_ENCODING).replace('\r\n', '\n')
+    out = file_text(stdout_path).replace('\r\n', '\n')
+    err = file_text(stderr_path).replace('\r\n', '\n')
     os.unlink(stdout_path)
     os.unlink(stderr_path)
     if stdin: 
