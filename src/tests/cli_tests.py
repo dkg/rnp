@@ -61,6 +61,9 @@ WEIRD_USERID_UNICODE_1 = unichr(160) + unichr(161) \
 WEIRD_USERID_UNICODE_2 = unichr(160) + unichr(161) \
     + UNICODE_SEQUENCE_2 + unichr(40960) + u'@rnp'
 WEIRD_USERID_SPECIAL_CHARS = '\\}{][)^*.+(\t\n|$@rnp'
+WEIRD_USERID_SPACE = ' '
+WEIRD_USERID_QUOTE = '"'
+WEIRD_USERID_SPACE_AND_QUOTE = ' "'
 WEIRD_USERID_TOO_LONG = 'x' * 125 + '@rnp' # totaling 129 (MAX_USER_ID + 1)
 
 # Key userids
@@ -269,8 +272,12 @@ def clear_workfiles():
 
 def rnp_genkey_rsa(userid, bits=2048, pswd=PASSWORD):
     pipe = pswd_pipe(pswd)
+    if is_windows():
+        userid_params = ['--userid="' + userid +'"'] # TODO: backslash escape double-quote
+    else:
+        userid_params = ['--userid', userid]
     ret, _, err = run_proc(RNPK, ['--numbits', str(bits), '--homedir', RNPDIR, '--pass-fd',
-                                  str(pipe), '--userid', userid, '--generate-key'])
+                                  str(pipe)] + userid_params + ['--generate-key'])
     os.close(pipe)
     if ret != 0:
         raise_err('rsa key generation failed', err)
@@ -1377,6 +1384,9 @@ class Keystore(unittest.TestCase):
 
     def test_userid_special_chars_genkeys(self):
         test_userid_genkey('track', WEIRD_USERID_SPECIAL_CHARS, 'end')
+        test_userid_genkey('track', WEIRD_USERID_SPACE, 'end')
+        test_userid_genkey('track', WEIRD_USERID_QUOTE, 'end')
+        test_userid_genkey('track', WEIRD_USERID_SPACE_AND_QUOTE, 'end')
 
     def test_userid_too_long_genkeys(self):
         clear_keyrings()
@@ -2050,13 +2060,17 @@ class Encryption(unittest.TestCase):
             remove_files(dst, dec)
 
     def test_encryption_weird_userids(self):
-        USERIDS_1 = [WEIRD_USERID_SPECIAL_CHARS, WEIRD_USERID_UNICODE_1, WEIRD_USERID_UNICODE_2]
-        USERIDS_2 = [WEIRD_USERID_SPECIAL_CHARS, WEIRD_USERID_UNICODE_1, WEIRD_USERID_UNICODE_2]
+        USERIDS_1 = [
+            WEIRD_USERID_SPACE, WEIRD_USERID_QUOTE, # WEIRD_USERID_SPACE_AND_QUOTE,
+            WEIRD_USERID_SPECIAL_CHARS, WEIRD_USERID_UNICODE_1, WEIRD_USERID_UNICODE_2]
+        USERIDS_2 = [
+            WEIRD_USERID_SPACE, WEIRD_USERID_QUOTE, # WEIRD_USERID_SPACE_AND_QUOTE,
+            WEIRD_USERID_SPECIAL_CHARS, WEIRD_USERID_UNICODE_1, WEIRD_USERID_UNICODE_2]
         # The idea is to generate keys with USERIDS_1 and encrypt with USERIDS_2
         # (that differ only in case)
         # But currently Unicode case-insensitive search is not working,
         # so we're encrypting with exactly the same recipient
-        KEYPASS = ['key1pass', 'key2pass', 'key3pass']
+        KEYPASS = ['key1pass', 'key2pass', 'key3pass', 'key4pass', 'key5pass']
         # Generate multiple keys
         for uid, pswd in zip(USERIDS_1, KEYPASS):
             rnp_genkey_rsa(uid, 1024, pswd)
