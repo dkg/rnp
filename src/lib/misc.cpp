@@ -532,6 +532,7 @@ static bool
 contains_non_ascii(int argc, char **argv)
 {
     for (int i = 0; i < argc; i++) {
+        RNP_LOG("%d{%s}", i, argv[i]);
         for (auto sz = argv[i]; *sz; sz++) {
             if ((*sz & 0x7F) != *sz) {
                 return true;
