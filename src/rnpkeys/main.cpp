@@ -34,6 +34,7 @@
 #else
 #include <getopt.h>
 #endif
+#include "utils.h"
 #include <stdio.h>
 #include <string.h>
 
