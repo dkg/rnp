@@ -398,7 +398,7 @@ grabdate(const char *s, int64_t *t)
 
     if (std::regex_search(input, result, re)) {
         (void) memset(&tm, 0x0, sizeof(tm));
-        tm.tm_year = (int) strtol(result[1].str().c_str(), NULL, 10);
+        tm.tm_year = (int) strtol(result[1].str().c_str(), NULL, 10) - 1900;
         tm.tm_mon = (int) strtol(result[2].str().c_str(), NULL, 10) - 1;
         tm.tm_mday = (int) strtol(result[3].str().c_str(), NULL, 10);
         *t = mktime(&tm);
@@ -434,7 +434,7 @@ get_expiration(const char *s)
         }
     }
     if (grabdate(s, &t)) {
-        return t;
+        return t - time(NULL);
     }
     return (uint64_t) strtoll(s, NULL, 10);
 }

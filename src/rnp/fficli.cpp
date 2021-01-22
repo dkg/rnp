@@ -1021,6 +1021,12 @@ cli_rnp_generate_key(cli_rnp_t *rnp, const char *username)
         ERR_MSG("Failed to set key curve.");
         goto done;
     }
+    if (cfg.has(CFG_KG_PRIMARY_EXPIRATION) &&
+        rnp_op_generate_set_expiration(
+          genkey, get_expiration(cfg.get_cstr(CFG_KG_PRIMARY_EXPIRATION)))) {
+        ERR_MSG("Failed to set primary key expiration.");
+        goto done;
+    }
     // TODO : set DSA qbits
     if (rnp_op_generate_set_hash(genkey, cfg.get_cstr(CFG_KG_HASH))) {
         ERR_MSG("Failed to set hash algorithm.");
@@ -1053,6 +1059,12 @@ cli_rnp_generate_key(cli_rnp_t *rnp, const char *username)
     if (cfg.has(CFG_KG_SUBKEY_CURVE) &&
         rnp_op_generate_set_curve(genkey, cfg.get_cstr(CFG_KG_SUBKEY_CURVE))) {
         ERR_MSG("Failed to set subkey curve.");
+        goto done;
+    }
+    if (cfg.has(CFG_KG_SUBKEY_EXPIRATION) &&
+        rnp_op_generate_set_expiration(
+          genkey, get_expiration(cfg.get_cstr(CFG_KG_SUBKEY_EXPIRATION)))) {
+        ERR_MSG("Failed to set subkey expiration.");
         goto done;
     }
     // TODO : set DSA qbits

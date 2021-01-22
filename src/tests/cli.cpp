@@ -77,6 +77,7 @@ call_rnp(const char *cmd, ...)
 }
 
 #define KEYS "data/keyrings"
+#define GENKEYS "data/keyrings_genkey_tmp"
 #define MKEYS "data/test_stream_key_merge/"
 #define FILES "data/test_cli"
 #define G10KEYS "data/test_stream_key_load/g10"
@@ -599,6 +600,204 @@ TEST_F(rnp_tests, test_cli_rnpkeys)
 
     ret = call_rnp("rnpkeys", "--homedir", KEYS "/1", "--list-keys", "zzzzzzzz", NULL);
     assert_int_not_equal(ret, 0);
+}
+
+TEST_F(rnp_tests, test_cli_rnpkeys_genkey)
+{
+    int ret;
+    assert_false(RNP_MKDIR(GENKEYS, S_IRWXU));
+    auto uid_to_expiration = std::unordered_map<std::string, uint32_t>{
+      {"expiration_1sec@rnp", 1},
+      {"expiration_1hour@rnp", 3600},
+      {"expiration_1day@rnp", 86400},
+      {"expiration_1week@rnp", 604800},
+      {"expiration_1month@rnp", 2678400},
+      {"expiration_1year@rnp", 31536000},
+      {"expiration_2sec@rnp", 2},
+      {"expiration_2hours@rnp", 7200},
+      {"expiration_2days@rnp", 172800},
+      {"expiration_2weeks@rnp", 1209600},
+      {"expiration_2months@rnp", 5356800},
+      {"expiration_2years@rnp", 63072000},
+    };
+
+    ret = call_rnp("rnpkeys",
+                   "--password",
+                   "1234",
+                   "--homedir",
+                   GENKEYS,
+                   "--generate-key",
+                   "--expiration",
+                   "1",
+                   "--userid",
+                   "expiration_1sec@rnp",
+                   NULL);
+    assert_int_equal(ret, 0);
+
+    ret = call_rnp("rnpkeys",
+                   "--password",
+                   "1234",
+                   "--homedir",
+                   GENKEYS,
+                   "--generate-key",
+                   "--expiration",
+                   "1h",
+                   "--userid",
+                   "expiration_1hour@rnp",
+                   NULL);
+    assert_int_equal(ret, 0);
+
+    ret = call_rnp("rnpkeys",
+                   "--password",
+                   "1234",
+                   "--homedir",
+                   GENKEYS,
+                   "--generate-key",
+                   "--expiration",
+                   "1d",
+                   "--userid",
+                   "expiration_1day@rnp",
+                   NULL);
+    assert_int_equal(ret, 0);
+
+    ret = call_rnp("rnpkeys",
+                   "--password",
+                   "1234",
+                   "--homedir",
+                   GENKEYS,
+                   "--generate-key",
+                   "--expiration",
+                   "1w",
+                   "--userid",
+                   "expiration_1week@rnp",
+                   NULL);
+    assert_int_equal(ret, 0);
+
+    ret = call_rnp("rnpkeys",
+                   "--password",
+                   "1234",
+                   "--homedir",
+                   GENKEYS,
+                   "--generate-key",
+                   "--expiration",
+                   "1m",
+                   "--userid",
+                   "expiration_1month@rnp",
+                   NULL);
+    assert_int_equal(ret, 0);
+
+    ret = call_rnp("rnpkeys",
+                   "--password",
+                   "1234",
+                   "--homedir",
+                   GENKEYS,
+                   "--generate-key",
+                   "--expiration",
+                   "1y",
+                   "--userid",
+                   "expiration_1year@rnp",
+                   NULL);
+    assert_int_equal(ret, 0);
+
+    ret = call_rnp("rnpkeys",
+                   "--password",
+                   "1234",
+                   "--homedir",
+                   GENKEYS,
+                   "--generate-key",
+                   "--expiration",
+                   "2",
+                   "--userid",
+                   "expiration_2sec@rnp",
+                   NULL);
+    assert_int_equal(ret, 0);
+
+    ret = call_rnp("rnpkeys",
+                   "--password",
+                   "1234",
+                   "--homedir",
+                   GENKEYS,
+                   "--generate-key",
+                   "--expiration",
+                   "2h",
+                   "--userid",
+                   "expiration_2hours@rnp",
+                   NULL);
+    assert_int_equal(ret, 0);
+
+    ret = call_rnp("rnpkeys",
+                   "--password",
+                   "1234",
+                   "--homedir",
+                   GENKEYS,
+                   "--generate-key",
+                   "--expiration",
+                   "2d",
+                   "--userid",
+                   "expiration_2days@rnp",
+                   NULL);
+    assert_int_equal(ret, 0);
+
+    ret = call_rnp("rnpkeys",
+                   "--password",
+                   "1234",
+                   "--homedir",
+                   GENKEYS,
+                   "--generate-key",
+                   "--expiration",
+                   "2w",
+                   "--userid",
+                   "expiration_2weeks@rnp",
+                   NULL);
+    assert_int_equal(ret, 0);
+
+    ret = call_rnp("rnpkeys",
+                   "--password",
+                   "1234",
+                   "--homedir",
+                   GENKEYS,
+                   "--generate-key",
+                   "--expiration",
+                   "2m",
+                   "--userid",
+                   "expiration_2months@rnp",
+                   NULL);
+    assert_int_equal(ret, 0);
+
+    ret = call_rnp("rnpkeys",
+                   "--password",
+                   "1234",
+                   "--homedir",
+                   GENKEYS,
+                   "--generate-key",
+                   "--expiration",
+                   "2y",
+                   "--userid",
+                   "expiration_2years@rnp",
+                   NULL);
+    assert_int_equal(ret, 0);
+
+    auto         keystore = new rnp_key_store_t(PGP_KEY_STORE_GPG, "");
+    pgp_source_t src = {};
+    assert_rnp_success(init_file_src(&src, GENKEYS "/pubring.gpg"));
+    assert_true(rnp_key_store_load_from_src(keystore, &src, NULL));
+    assert_int_equal(rnp_key_store_get_key_count(keystore), 24);
+    src_close(&src);
+    for (auto &key : keystore->keys) {
+        pgp_key_t *pk;
+        if (key.is_primary()) {
+            pk = &key;
+        } else {
+            assert_true(key.has_primary_fp());
+            pk = rnp_key_store_get_key_by_fpr(keystore, key.primary_fp());
+        }
+        assert_int_equal(pk->uid_count(), 1);
+        auto uid = pk->get_uid(0).str;
+        auto expiration = key.expiration();
+        assert_int_equal(uid_to_expiration[uid], expiration);
+    }
+    delete keystore;
+    // assert_false(rnp_unlink(GENKEYS));
 }
 
 TEST_F(rnp_tests, test_cli_dump)
