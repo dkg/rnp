@@ -4104,12 +4104,9 @@ try {
     /* process key itself */
     pgp_key_t *sec = get_key_require_secret(handle);
     remove_key_signatures(handle->ffi, *key, sec, flags, sigcb, app_ctx);
-    if (key->is_subkey()) {
-        return RNP_SUCCESS;
-    }
 
     /* process subkeys */
-    for (size_t idx = 0; idx < key->subkey_count(); idx++) {
+    for (size_t idx = 0; key->is_primary() && (idx < key->subkey_count()); idx++) {
         pgp_key_t *sub = pgp_key_get_subkey(key, handle->ffi->pubring, idx);
         if (!sub) {
             FFI_LOG(handle->ffi, "Failed to get subkey at idx %zu.", idx);
@@ -4120,6 +4117,11 @@ try {
             subsec = pgp_key_get_subkey(sec, handle->ffi->secring, idx);
         }
         remove_key_signatures(handle->ffi, *sub, subsec, flags, sigcb, app_ctx);
+    }
+    /* revalidate key/subkey */
+    key->revalidate(*handle->ffi->pubring);
+    if (sec) {
+        sec->revalidate(*handle->ffi->secring);
     }
     return RNP_SUCCESS;
 }

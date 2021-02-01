@@ -971,6 +971,7 @@ RNP_API rnp_result_t rnp_key_remove(rnp_key_handle_t key, uint32_t flags);
 
 /**
  * @brief Remove unneeded signatures from the key, it's userids and subkeys if any.
+ *        May be called on subkey handle as well.
  *        Note: you'll need to call rnp_save_keys() to write updated keyring(s) out.
  *        Any signature handles related to this key, it's uids or subkeys should not be used
  *        after this call.
