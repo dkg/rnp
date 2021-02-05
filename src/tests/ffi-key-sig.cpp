@@ -1061,3 +1061,17 @@ TEST_F(rnp_tests, test_ffi_remove_signature)
 
     assert_rnp_success(rnp_ffi_destroy(ffi));
 }
+
+TEST_F(rnp_tests, test_ffi_remove_signatures)
+{
+    rnp_ffi_t ffi = NULL;
+
+    assert_rnp_success(rnp_ffi_create(&ffi, "GPG", "GPG"));
+    assert_true(load_keys_gpg(ffi, "data/test_key_edge_cases/alice-sig-misc-values.pgp"));
+    rnp_key_handle_t key = NULL;
+    assert_rnp_success(rnp_locate_key(ffi, "keyid", "0451409669ffde3c", &key));
+    rnp_key_handle_destroy(key);
+
+    assert_rnp_success(rnp_ffi_destroy(ffi));
+    assert_true(false);
+}
